@@ -15,13 +15,14 @@ const API_OPTIONS = {
 const App = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-  const [movies, setMovies] = useState([]);
-
-  const fetchMovies = async (query = '') => {
+  const [MoviesList, setMovies] = useState([]);
+  const [IsLoading, setIsLoading] = useState(false);
+  const fetchMovies = async () => {
+    setIsLoading(true);
     setErrorMessage('');
 
     try {
-      const endpoint = query
+      const endpoint = searchTerm
         ? `${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}`
         : `${API_BASE_URL}/discover/movie?sort_by=popularity.desc`;
 
@@ -35,15 +36,19 @@ const App = () => {
 
       if (data.Response === 'False') {
         setErrorMessage(data.Error || 'Failed to fetch movies');
+        setMoviesList(value:[]);
         return;
       }
 
-      setMovies(data.results || []);
+      setMoviesList(data.results || []);
+       
     } catch (error) {
       console.error(`Error fetching movies: ${error}`);
       setErrorMessage('Error fetching movies. Please try again later.');
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }
 
   useEffect(() => {
     fetchMovies(searchTerm);
@@ -65,21 +70,17 @@ const App = () => {
           <section className="all-movies">
             <h2>All Movies</h2>
 
-            {errorMessage && (
-              <p className="text-red-500">{errorMessage}</p>
-            )}
-
+            {isLoading ? (
+            <Spinner />
+          ) : errorMessage ? (
+            <p className="text-red-500">{errorMessage}</p>
+          ) : (
             <ul>
-              {movies.map((movie) => (
-                <li key={movie.id}>
-                  <img
-                    src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
-                    alt={movie.title}
-                  />
-                  <p>{movie.title}</p>
-                </li>
+              {movieList.map((movie) => (
+                <MovieCard key={movie.id} movie={movie} />
               ))}
             </ul>
+          )}
           </section>
         </div>
       </div>
