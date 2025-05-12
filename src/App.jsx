@@ -1,8 +1,8 @@
-import React from "react";
-import { useEffect, useState } from "react";
-import Search from "./components/search.jsx"; 
-const API_BASE_URL = "https://api.themoviedb.org/3/";
-const API_KEY = import.meta.env.VITE_API_KEY;
+import React, { useEffect, useState } from "react";
+import Search from "./components/search.jsx";
+
+const API_BASE_URL = "https://api.themoviedb.org/3";
+const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 
 const API_OPTIONS = {
   method: "GET",
@@ -17,14 +17,27 @@ const App = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [movies, setMovies] = useState([]);
 
-  const fetchMovies = async () => {
+  const fetchMovies = async (query = '') => {
+    setErrorMessage('');
+
     try {
-      const endpoint = `${API_BASE_URL}discover/movie?sort_by=popularity.desc`;
+      const endpoint = query
+        ? `${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}`
+        : `${API_BASE_URL}/discover/movie?sort_by=popularity.desc`;
+
       const response = await fetch(endpoint, API_OPTIONS);
+
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
+
       const data = await response.json();
+
+      if (data.Response === 'False') {
+        setErrorMessage(data.Error || 'Failed to fetch movies');
+        return;
+      }
+
       setMovies(data.results || []);
     } catch (error) {
       console.error(`Error fetching movies: ${error}`);
@@ -33,8 +46,8 @@ const App = () => {
   };
 
   useEffect(() => {
-    fetchMovies();
-  }, []);
+    fetchMovies(searchTerm);
+  }, [searchTerm]);
 
   return (
     <main>
@@ -48,28 +61,26 @@ const App = () => {
             </h1>
             <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
           </header>
+
           <section className="all-movies">
             <h2>All Movies</h2>
-            <div className="movies-grid">
-              {movies.length > 0 ? (
-                movies.map((movie) => (
-                  <div key={movie.id} className="movie-card">
-                    <img 
-                      src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`} 
-                      alt={movie.title}
-                    />
-                    <h3>{movie.title}</h3>
-                  </div>
-                ))
-              ) : (
-                <p>No movies found. Try a different search.</p>
-              )}
-            </div>
-          </section>
-  
 
-          
-          {errorMessage && <p className="text-red-500">{errorMessage}</p>}
+            {errorMessage && (
+              <p className="text-red-500">{errorMessage}</p>
+            )}
+
+            <ul>
+              {movies.map((movie) => (
+                <li key={movie.id}>
+                  <img
+                    src={`https://image.tmdb.org/t/p/w500${movie.poster_path}`}
+                    alt={movie.title}
+                  />
+                  <p>{movie.title}</p>
+                </li>
+              ))}
+            </ul>
+          </section>
         </div>
       </div>
     </main>
